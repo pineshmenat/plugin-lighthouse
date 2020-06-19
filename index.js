@@ -6,6 +6,8 @@ const omit = require('object.omit');
 const merge = require('lodash.merge');
 const runAudit = require('./runAudit');
 const Aggregator = require('./aggregator');
+const cloneDeep = require('lodash.clonedeep');
+const reportGenerator = require('lighthouse/lighthouse-core/report/report-generator')
 
 const DEFAULT_SINGLE_RUN_SUMMARY_METRICS = [
   'categories.seo.score',
@@ -137,9 +139,14 @@ module.exports = {
       }
 
       case 'lighthouse.audit': {
+        log.info(`Leveraging GPSI lighthouseresult to generate html report`);
+        break;
+      }
+
+      case 'gpsi.pageSummary': {
         this.aggregator = new Aggregator(this.statsHelpers, this.log);
-        const { url, group } = message.data;
-        let result;
+        const { url, group } = message;
+        let lighthouseResult;
         for (let i = 0; i < this.lightHouseConfig.iterations; i++) {
           log.info(
             'Start collecting Lighthouse result for %s iteration %d',
@@ -147,17 +154,22 @@ module.exports = {
             i + 1
           );
           try {
-            result = await runAudit({
-              url,
-              lightHouseConfig: this.lightHouseConfig,
-              lighthouseFlags: this.lighthouseFlags,
-              lighthousePreScript: this.lighthousePreScript
-            });
-            log.verbose('Result from Lighthouse:%:2j', result.lhr);
-            this.aggregator.addToAggregate(result.lhr);
-            log.verbose('Report from Lighthouse:%:2j', result.report);
+
+            if(message.data.data === "undefined") {
+              throw new Error("Error in Data, psi_result not found");
+            }
+            let psi_result = cloneDeep(message.data.data);
+            if(typeof(psi_result.lighthouseResult) == "undefined") {
+              throw new Error("lighthouseResult is undefined");
+            }
+            lighthouseResult = psi_result.lighthouseResult;
+            delete psi_result.lighthouseResult;
+            const report = reportGenerator.generateReportHtml(lighthouseResult);
+
+            this.aggregator.addToAggregate(lighthouseResult);
+            log.verbose('Report from Lighthouse:%:2j', report);
             queue.postMessage(
-              make('lighthouse.report', result.report, {
+              make('lighthouse.report', report, {
                 url,
                 group,
                 iteration: i + 1
@@ -198,7 +210,7 @@ module.exports = {
           queue.postMessage(
             make(
               'lighthouse.pageSummary',
-              merge(result.lhr, { iterations: 1 }),
+              merge(lighthouseResult, { iterations: 1 }),
               { url, group }
             )
           );
