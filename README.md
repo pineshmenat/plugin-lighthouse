@@ -1,5 +1,10 @@
-# sitespeed.io plugin for Lighthouse
+# sitespeed.io plugin for Google PageSpeed Insights(GPSI)-Lighthouse
 [![Build Status](https://travis-ci.org/sitespeedio/plugin-lighthouse.svg?branch=master)](https://travis-ci.org/sitespeedio/plugin-lighthouse)
+
+## This is fork of original plugin-lighthouse repo with following modifications: 
+1) This plugin is dependent on plugin-gpsi results which is used to generate 
+Lighthouse html report insted of running lighthouse locally.
+2) As this plugin is not running any lighthouse plugin locally, we will not be able to run any pre-script  
 
 Run Lighthouse as a plugin for sitespeed.io (inspired by [siteriaitaliana](https://github.com/siteriaitaliana/plugin-lighthouse)).
 
@@ -7,27 +12,23 @@ You can read more about sitespeed.io plugins [here](https://www.sitespeed.io/doc
 
 ## Test with current master
 
-If you have checked out as the same level as sitespeed.io you run it like this (else just change the path).
+Prerequisite: 
+
+1) Setup sitespeed.io
+2) cd sitespeed.io/lib/plugins/
+3) git clone https://github.com/sitespeedio/plugin-gpsi.git
+
+Setup: 
 
 ```bash
-git clone https://github.com/sitespeedio/sitespeed.io.git
-cd sitespeed.io
-npm install
-bin/sitespeed.js --plugins.add ../plugin-lighthouse/ https://www.sitespeed.io/ -n 1
+cd sitespeed.io/lib/plugins/
+git submodule add https://github.com/sitespeedio/plugin-gpsi.git
+git submodule add https://github.com/pineshmenat/plugin-lighthouse.git
+cd plugin-gpsi && npm install
+cd ../plugin-lighthouse/ && npm install
+
+node ./bin/sitespeed.js --plugins.add ../plugins/plugin-gpsi/,../plugins/plugin-lighthouse/ https://www.sitespeed.io/ -n 1
 ```
-
-An alternative approach to installing:
-
-1) Install using NPM, directly accessing GitHub rather than the NPM registry:
-```bash
-npm install sitespeedio/plugin-lighthouse
-```
-2) Within the folder where sitespeed.io has been installed, run the following:
-
-```bash
-./node_modules/sitespeed.io/bin/sitespeed.js --plugins.add ./node_modules/@sitespeed.io/plugin-lighthouse/ https://www.sitespeed.io/ -n 1
-```
-
 
 ## Run in production
 If you want to run Lighthouse with your other sitespeed.io test, follow the instructions in the [add a plugin docs](https://www.sitespeed.io/documentation/sitespeed.io/plugins/#add-a-plugin) or use the sitespeed.io +1 container. Read the [documentation](https://www.sitespeed.io/documentation/sitespeed.io/lighthouse/).
@@ -89,20 +90,8 @@ You can extend the Lighthouse presets by adding the `extends` property. By defau
 
 Since this plugin using the Lighthouse node module and not the CLI, some options from the CLI API are not available. You can find a list of supported flags by checking out the [SharedFlagsSetting](https://github.com/GoogleChrome/lighthouse/blob/41bc409deddb44dd607d2606b7e57e1d239641a7/types/externs.d.ts) interface in the Lighthouse repository.
 
-**Example:** To change the device type from 'mobile' to 'desktop' mode, you could use:\
-`--lighthouse.extends lighthouse:default --lighthouse.settings.emulatedFormFactor desktop`
-
-Lighthouse use "simulated" network throttling by default. If you want to change to use the simulated throttling: `--lighthouse.settings.throttlingMethod simulate`
-
-For more details, check out the [Lighthouse Configuration](https://github.com/GoogleChrome/lighthouse/blob/master/docs/configuration.md) page.
-
-#### `lighthouse.puppeteer`
-
-Lighthouse plugin launches a separate chrome using [`puppeteer`](https://github.com/puppeteer/puppeteer). The default settings uses headless mode.
-
-There is [high variance with Lighthouse issue with headless mode](https://github.com/sitespeedio/plugin-lighthouse/issues/38). Consider removing headless mode by setting `headless: false` and running sitespeed.io with a Xvfb server for more consistent results.
-
-More info about [configuring puppeteer here](https://github.com/puppeteer/puppeteer#default-runtime-settings).
+**Example:** Access pages as mobile a fake mobile device. Set UA and width/height. For Chrome it will use device Apple iPhone 6.  [boolean] [default: false]:\
+use --mobile flag
 
 #### Debug
 
